@@ -47,15 +47,21 @@ hashtags = re.compile(r'(#[a-zA-Z]+[a-zA-Z0-9_]*)')
 
 contraction_expander = NegationReplacer()
 
-def remove_all_filters(string_text):
-	temp = HTMLParser.HTMLParser().unescape(string_text)
-	temp = replace_two_or_more_letters(string_text)
-	temp = remove_user_mentions(string_text)
-	temp = expand_negations(string_text)
-	temp = remove_whitespace(string_text)
-	temp = replace_hashtags_with_words(string_text)
-	temp = remove_strange_symbols(string_text)
+def remove_all_filters(string_text, lowercase=True):
+	temp = string_text.lower() if lowercase else string_text
+	temp = HTMLParser.HTMLParser().unescape(temp)
+	temp = replace_two_or_more_letters(temp)
+	temp = remove_user_mentions(temp)
+	temp = expand_negations(temp)
+	temp = remove_whitespace(temp)
+	temp = replace_hashtags_with_words(temp)
+	temp = remove_strange_symbols(temp)
 	return temp
+
+def filter_all_dataset(dataset):
+	for document in dataset:
+		remove_all_filters(document)
+	return dataset
 
 def remove_emoticons(string_text):
 	tweet = re.sub(Happy_RE, "", string_text)

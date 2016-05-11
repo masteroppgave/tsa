@@ -19,22 +19,27 @@ from transformers.tfidf_transformer import *
 from transformers.lexicon_transformer import *
 from transformers.filter_transformer import *
 
+from utils import filters as f
 from data import resources
 
 
-def train_classifier(classifier=None, training_set=None, label_set=None, force_new=0, gridsearch=False):
+def train_classifier(classifier=None, training_set=None, label_set=None, force_new=0, gridsearch=False, filter_dataset=True):
+	if filter_dataset:
+		f.filter_all_dataset(training_set)
+
 	classifier_type, classifier_name = get_classifier(classifier)
 	classifier_path = os.path.join(resources.pickles, str(classifier_name)+".pickle")
 	if os.path.exists(classifier_path) and not force_new:
 		with open(classifier_path, 'rb') as file:
 			pipeline = pickle.load(file)
 	else:
-		stratified_split = StratifiedShuffleSplit(label_set, 1, 0.2, random_state=1)
-		for train_indices, test_indices in stratified_split:
+		stratified_shuffle_split = StratifiedShuffleSplit(label_set, 1, 0.2, random_state=1)
+		for train_indices, test_indices in stratified_shuffle_split:
 			X_train = [training_set[train_index] for train_index in train_indices]
 			X_test = [training_set[test_index] for test_index in test_indices]
 			y_train = [label_set[train_index] for train_index in train_indices]
 			y_test = [label_set[test_index] for test_index in test_indices]
+
 		filter_transformer = Pipeline([
 				('filter', FilterTransformer())
 			])

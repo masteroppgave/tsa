@@ -35,10 +35,19 @@ if __name__ == "__main__":
     root_dir = os.path.dirname(__file__)
     data_file = os.path.join(root_dir, 'data/tweets/labeled_tweets.tsv')
     training_set, label_set = load_data(data_file)
-    clf = train(training_set, label_set, classifier="nb")
-
+    training_set = training_set[0:50]
+    from transformers.lexicon_transformer import LexiconTransformer
+    t = LexiconTransformer()
+    transformed = t.transform(training_set)
+    print transformed
 
 """
+if __name__ == "__main__":
+    root_dir = os.path.dirname(__file__)
+    data_file = os.path.join(root_dir, 'data/tweets/labeled_tweets.tsv')
+    training_set, label_set = load_data(data_file)
+    clf = train(training_set, label_set, classifier="nb")
+
     "linearsvm": LinearSVC(),
     "svm": SVC(),
     "maxent": LogisticRegression(),
