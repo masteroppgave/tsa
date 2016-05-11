@@ -13,7 +13,7 @@ class LexiconTransformer(TransformerMixin, BaseEstimator):
 
 	def _nrc_emotion(self):
 		lexicon_file = resources.lexica['nrc_e']
-		with open(lexicon_file, mode='r') as f: # parameter for open():  ,encoding='utf-8'
+		with open(lexicon_file, mode='r') as f: 
 			lines = f.readlines()[46:]
 			reader = csv.reader(lines, delimiter='\t')
 		lexicon = {}
@@ -28,14 +28,11 @@ class LexiconTransformer(TransformerMixin, BaseEstimator):
 	def _bing_liu(self):
 		lexicon = {}
 		pos_lexicon_file = resources.lexica['bing_p']
-		with open(pos_lexicon_file, mode='r') as f: # parameter for open(): encoding='latin-1'
-			count = 1
+		with open(pos_lexicon_file, mode='r') as f: 
 			for word in f.readlines()[35:]:
-				if count == 1:
-					print word
 				lexicon[word.strip()] = 1
 		neg_lexicon_file = resources.lexica['bing_n']
-		with open(neg_lexicon_file, mode='r') as f: # parameter for open(): encoding='latin-1'
+		with open(neg_lexicon_file, mode='r') as f: 
 			for word in f.readlines()[35:]:
 				lexicon[word.strip()] = -1
 		return lexicon
@@ -43,7 +40,7 @@ class LexiconTransformer(TransformerMixin, BaseEstimator):
 	def _mpqa(self):
 		lexicon = {}
 		lexicon_file = resources.lexica['mpqa']
-		with open(lexicon_file, mode='r') as f:  # parameter for open(): encoding='latin-1'
+		with open(lexicon_file, mode='r') as f:  
 			reader = csv.reader(f, delimiter=' ', quoting=csv.QUOTE_NONE)
 			for row in reader:
 				if row[5].split("=", 1)[1] == 'positive':
@@ -64,6 +61,9 @@ class LexiconTransformer(TransformerMixin, BaseEstimator):
 		for lexicon in manual_lexica:
 			matrix = self._manual_lexicon_scorer(raw_tweets, lexicon())
 		return matrix
+
+	def fit(self, raw_tweets, y=None):
+		return self
 
 	def _manual_lexicon_scorer(self, raw_tweets, lexicon_dict):
 		scores = np.zeros((len(raw_tweets), 4))

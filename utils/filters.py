@@ -3,6 +3,8 @@ from negation_replacer import NegationReplacer
 from nltk.corpus import stopwords
 from negations import NegationLibrary
 import string
+import HTMLParser
+
 
 stopwords = stopwords.words('english') + list(string.punctuation) + ['rt', 'via']
 
@@ -46,6 +48,7 @@ hashtags = re.compile(r'(#[a-zA-Z]+[a-zA-Z0-9_]*)')
 contraction_expander = NegationReplacer()
 
 def remove_all_filters(string_text):
+	temp = HTMLParser.HTMLParser().unescape(string_text)
 	temp = replace_two_or_more_letters(string_text)
 	temp = remove_user_mentions(string_text)
 	temp = expand_negations(string_text)

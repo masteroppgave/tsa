@@ -1,4 +1,5 @@
 import pickle
+import os
 
 from time import time
 
@@ -16,13 +17,14 @@ from sklearn.svm import SVC, LinearSVC, NuSVC
 from transformers.emoticon_transformer import *
 from transformers.tfidf_transformer import *
 from transformers.lexicon_transformer import *
+from transformers.filter_transformer import *
 
 from data import resources
 
 
-def train_classifier(classifier=None, training_set=None, label_set=None, force_new=0):
+def train_classifier(classifier=None, training_set=None, label_set=None, force_new=0, gridsearch=False):
 	classifier_type, classifier_name = get_classifier(classifier)
-	classifier_path = os.path.join(resources.pickles, classifier_name+'.pickle')
+	classifier_path = os.path.join(resources.pickles, str(classifier_name)+".pickle")
 	if os.path.exists(classifier_path) and not force_new:
 		with open(classifier_path, 'rb') as file:
 			pipeline = pickle.load(file)
@@ -33,16 +35,11 @@ def train_classifier(classifier=None, training_set=None, label_set=None, force_n
 			X_test = [training_set[test_index] for test_index in test_indices]
 			y_train = [label_set[train_index] for train_index in train_indices]
 			y_test = [label_set[test_index] for test_index in test_indices]
+		filter_transformer = Pipeline([
+				('filter', FilterTransformer())
+			])
 
-	# X = [elem[0] for elem in training_set]
-	# y = [elem[1] for elem in training_set]
-	# X_train, X_test, y_train, y_test = cross_validation.train_test_split(X, y, test_size=0.2)
-
-	filter_transformer = Pipeline([
-			('filter', FilterTransformer())
-		])
-
-	tfidf_parameters = {'use_idf': 1,
+		tfidf_parameters = {'use_idf': 1,
 							'smooth_idf': 1,
 							'sublinear_tf': 1,
 							'norm': 'l2',
@@ -50,21 +47,35 @@ def train_classifier(classifier=None, training_set=None, label_set=None, force_n
 							'lowercase': True,
 							'max_features': 3000}
 
-	feature_union = FeatureUnion([
-		('tfidf', TfidfNegTransformer(analyser='word', ngram_range=(1,4), **tfidf_parameters)),
-		('lex', LexiconTransformer(norm=True)),
-		('emoticons', EmoticonTransformer(norm=True))
-	])
+		feature_union = FeatureUnion([
+			('tfidf', TfidfNegTransformer(analyzer='word', ngram_range=(1,4), **tfidf_parameters)),
+			('lex', LexiconTransformer(norm=True)),
+			('emoticons', EmoticonTransformer(norm=True))
+		])
 
-	pipeline_config = resources.config['pipeline']
-	pipeline = Pipeline([
-		('preprocessing', filter_transformer),
-		('feature_extraction', feature_union),
-		('scaler', StandardScaler(with_mean=False))
-		('clf', classifier_type)])
+		pipeline_config = resources.config['pipeline']
+		pipeline = Pipeline([
+			('preprocessing', filter_transformer),
+			('feature_extraction', feature_union),
+			('scaler', StandardScaler(with_mean=False)),
+			('clf', classifier_type)])
 
-	
+		if gridsearch:
+			pipeline = grid_search(pipeline, X_train, y_train)
+		else: 
+			pipeline.fit(X_train,y_train)
 
+		y_pred = pipeline.predict(X_test)
+		labels = ['positive', 'neutral', 'negative']
+		print(classification_report(y_test, y_pred, labels=labels, digits=3))
+		cm = confusion_matrix(y_test, y_pred, labels=labels)
+		print(cm)
+		cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+		print(cm_normalized)
+
+		save_pipeline = open(classifier_path,"wb")
+		pickle.dump(pipeline, save_pipeline)
+		save_pipeline.close()
 	return pipeline
 
 def get_classifier(argument):
